@@ -1,0 +1,24 @@
+{
+  "name": "@a6kme/create-npm-package",
+  "version": "1.0.0",
+  "description": "Templates and scripts for NPM package",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/a6kme/create-npm-package.git",
+    "directory": "packages/create-npm-package"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/a6kme/create-npm-package/issues"
+  },
+  "engines": {
+    "node": ">=8.0"
+  },
+  "bin": {
+    "create-npm-package": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "create-npm-package.js"
+  ]
+}
