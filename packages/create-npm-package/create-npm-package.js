@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-
-const inquirer = require('inquirer');
-const chalk = require('chalk');
-const fs = require('fs-extra');
-const path = require('path');
 const os = require('os');
-const validateProjectName = require('validate-npm-package-name');
+const path = require('path');
+const fs = require('fs-extra');
+const chalk = require('chalk');
+var spawn = require('cross-spawn');
+const inquirer = require('inquirer');
 const { validateUsername } = require('./utils');
+const execSync = require('child_process').execSync;
+const validateProjectName = require('validate-npm-package-name');
 
 /******* Below code snippets are taken from https://github.com/facebook/create-react-app/ *******/
 
@@ -84,6 +85,63 @@ function isSafeToCreateProjectIn(root, name) {
 }
 
 /****** Code snippets end ******/
+
+function isInGitRepository(appPath) {
+  try {
+    execSync('git rev-parse --is-inside-work-tree', {
+      cwd: appPath,
+      stdio: 'ignore'
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function isInMercurialRepository(appPath, repositoryPath) {
+  try {
+    execSync('hg --cwd . root', { cwd: appPath, stdio: 'ignore' });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function tryGitInit(appPath) {
+  let didInit = false;
+  let options = { cwd: appPath, stdio: 'ignore' };
+  try {
+    execSync('git --version', options);
+
+    if (isInGitRepository() || isInMercurialRepository()) {
+      return false;
+    }
+
+    execSync('git init', options);
+    didInit = true;
+
+    execSync(`git remote add origin ${repositoryPath}`, options);
+
+    execSync('git add -A', options);
+    execSync('git commit -m "Initial commit from Create Npm Package"', options);
+    return true;
+  } catch (e) {
+    if (didInit) {
+      // If we successfully initialized but couldn't commit,
+      // maybe the commit author config is not set.
+      // In the future, we might supply our own committer
+      // like Ember CLI does, but for now, let's just
+      // remove the Git files to avoid a half-done state.
+      try {
+        // unlinkSync() doesn't work on directories.
+        fs.removeSync(path.join(appPath, '.git'));
+      } catch (removeErr) {
+        // Ignore.
+      }
+    }
+    return false;
+  }
+}
 
 function createNpmPackage() {
   // TODO: Also used commander, and skip prompts if configurations are given.
@@ -192,7 +250,17 @@ function run({ packageName, npmUsername, githubUsername, jsType }) {
     JSON.stringify(packageJson, null, 2) + os.EOL
   );
 
+  // Copy template files to new package folder
   copyTemplateFilesToRoot(jsType, root);
+
+  // Run npm install in the directory to install the packages
+  installDevDependencies(jsType, root);
+
+  // Initialize a git repository
+  if (tryGitInit(root, packageJson.repository.url)) {
+    console.log();
+    console.log(chalk.green('Initialized a git repository.'));
+  }
 }
 
 function copyTemplateFilesToRoot(jsType, root) {
@@ -204,4 +272,52 @@ function copyTemplateFilesToRoot(jsType, root) {
 
   // Copy common linting and config files
   fs.copySync(path.join(__dirname, '/templates/common'), root);
+}
+
+/**
+ * Get devDependencies for appropriate JavaScript flavour
+ *
+ * @param {*} jsType
+ * @returns devDependencies
+ */
+function installDevDependencies(jsType, root) {
+  let devDependencies = [];
+  const commonDependencies = [
+    'eslint',
+    'eslint-config-prettier',
+    'eslint-plugin-prettier',
+    'jest',
+    'prettier',
+    'webpack',
+    'webpack-cli'
+  ];
+
+  if (jsType === 'ES6') {
+    devDependencies = [
+      '@babel/core',
+      '@babel/preset-env',
+      'babel-eslint',
+      'babel-loader'
+    ];
+  } else if (jsType === 'TypeScript') {
+    devDependencies = ['typescript'];
+  }
+
+  const command = 'npm';
+  const args = ['install', '--save-dev'];
+  commonDependencies.forEach(function(value) {
+    args.push(value);
+  });
+  devDependencies.forEach(function(value) {
+    args.push(value);
+  });
+
+  console.log(chalk.green('Installing dependencies...'));
+  console.log();
+
+  const proc = spawn.sync(command, args, { cwd: root, stdio: 'inherit' });
+  if (proc.status !== 0) {
+    console.error(`\`${command} ${args.join(' ')}\` failed`);
+    return;
+  }
 }
