@@ -6,13 +6,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
 const validateProjectName = require('validate-npm-package-name');
-
-function validateUsername(username) {
-  if (username.match(/^[-a-z0-9_]/)) {
-    return true;
-  }
-  return false;
-}
+const { validateUsername } = require('./utils');
 
 /******* Below code snippets are taken from https://github.com/facebook/create-react-app/ *******/
 
