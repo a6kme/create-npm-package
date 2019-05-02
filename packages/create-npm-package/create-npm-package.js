@@ -107,7 +107,7 @@ function isInMercurialRepository(appPath, repositoryPath) {
   }
 }
 
-function tryGitInit(appPath) {
+function tryGitInit(appPath, repositoryPath) {
   let didInit = false;
   let options = { cwd: appPath, stdio: 'ignore' };
   try {
