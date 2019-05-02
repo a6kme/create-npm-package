@@ -33,7 +33,6 @@
     "webpack-cli": "^3.3.0"
   },
   "dependencies": {
-    "@a6kme/create-npm-package": "file:packages/create-npm-package",
-    "@a6kme/package-scripts": "file:packages/package-scripts"
+    "@a6kme/create-npm-package": "file:packages/create-npm-package"
   }
 }
