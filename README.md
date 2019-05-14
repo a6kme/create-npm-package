@@ -5,6 +5,10 @@
 ## Why?
 Often I had to create NPM packages, and I found myself creating the same boilerplate code again and again. For very simple and tiny CommonJS modules, I had to configure `webpack` differently than a library which I had to compile for `UMD`. `TypeScript` configuration and devDependencies were different than that of `ES6`. So, I figured better to create a CLI, which takes care of all that out of the box. Just answer few propmts, and the initial setup is done. 
 
+NOTE: You might not need it altogether, if you do not plan to use `TypeScript` or unsupported NodeJs features, like `ES6 import`. You can simply create your files in `JavaScript`, and publish it directly to NPM, without using any bundler or compiler. 
+
+It is needed when you are planning to expose the library as a `<script>` tag in browser, since you would want to use bundler to output one file which you can include in your HTML file. Or using experimental NodeJs features, and would want to use Babel compiler to convert it into more widely supported JavaScript. 
+
 ## How?
 - `npm install -g @a6kme/create-npm-package`
 - Run `create-npm-package` command, and answer some prompts to create a folder with your package name.

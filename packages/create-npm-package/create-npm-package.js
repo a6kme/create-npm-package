@@ -5,9 +5,11 @@ const fs = require('fs-extra');
 const chalk = require('chalk');
 var spawn = require('cross-spawn');
 const inquirer = require('inquirer');
-const { validateUsername } = require('./utils');
+const commander = require('commander');
 const execSync = require('child_process').execSync;
 const validateProjectName = require('validate-npm-package-name');
+const { validateUsername, JsType } = require('./utils');
+const { configureWebpack } = require('./configure-webpack');
 
 /******* Below code snippets are taken from https://github.com/facebook/create-react-app/ *******/
 
@@ -84,7 +86,7 @@ function isSafeToCreateProjectIn(root, name) {
   return true;
 }
 
-/****** Code snippets end ******/
+/****************************** Code snippets end ******************************/
 
 function isInGitRepository(appPath) {
   try {
@@ -98,7 +100,7 @@ function isInGitRepository(appPath) {
   }
 }
 
-function isInMercurialRepository(appPath, repositoryPath) {
+function isInMercurialRepository(appPath) {
   try {
     execSync('hg --cwd . root', { cwd: appPath, stdio: 'ignore' });
     return true;
@@ -113,7 +115,7 @@ function tryGitInit(appPath, repositoryPath) {
   try {
     execSync('git --version', options);
 
-    if (isInGitRepository() || isInMercurialRepository()) {
+    if (isInGitRepository(appPath) || isInMercurialRepository(appPath)) {
       return false;
     }
 
@@ -146,29 +148,42 @@ function tryGitInit(appPath, repositoryPath) {
 function createNpmPackage() {
   // TODO: Also used commander, and skip prompts if configurations are given.
   // A user of CLI can also invoke it using a script
+
+  let packageName;
+  const packageJson = require('./package.json');
+  const program = new commander.Command('create-npm-package')
+    .version(packageJson.version)
+    .arguments('<project-directory>')
+    .usage(`${chalk.green('<project-directory>')} [options]`)
+    .action(name => {
+      packageName = name;
+    })
+    .parse(process.argv);
+
+  if (typeof packageName === 'undefined') {
+    console.error('Please specify the package directory:');
+    console.log(
+      `  ${chalk.cyan(program.name())} ${chalk.green('<package-directory>')}`
+    );
+    console.log();
+    console.log('For example:');
+    console.log(
+      `  ${chalk.cyan(program.name())} ${chalk.green('my-npm-package')}`
+    );
+    console.log();
+    console.log(
+      `Run ${chalk.cyan(`${program.name()} --help`)} to see all options.`
+    );
+    process.exit(1);
+  }
+
   inquirer
     .prompt([
-      {
-        type: 'input',
-        name: 'packageName',
-        message: 'What package name do you want?',
-        validate: function(value) {
-          if (!value) {
-            return 'package name can not be empty';
-          }
-          if (validateProjectName(value).validForNewPackages) {
-            return true;
-          }
-          return `Can not create a project called ${chalk.red(
-            `"${value}"`
-          )} because of npm naming restrictions`;
-        }
-      },
       {
         type: 'list',
         name: 'jsType',
         message: 'What JavaScript flavour you want?',
-        choices: ['ES5', 'ES6', 'TypeScript']
+        choices: [JsType.ES5, JsType.ES6, JsType.TypeScript]
       },
       {
         type: 'input',
@@ -207,7 +222,10 @@ function createNpmPackage() {
       }
     ])
     .then(answeres => {
-      run(answeres);
+      run({
+        packageName: packageName,
+        ...answeres
+      });
     });
 }
 
@@ -218,7 +236,13 @@ createNpmPackage();
  *
  * @param {*} { packageName, npmUsername, githubUsername, jsType }
  */
-function run({ packageName, npmUsername, githubUsername, jsType }) {
+function run({
+  packageName,
+  npmUsername,
+  githubUsername,
+  jsType,
+  willUseInBrowser
+}) {
   const root = path.resolve(packageName);
   const appName = path.basename(root);
 
@@ -250,11 +274,28 @@ function run({ packageName, npmUsername, githubUsername, jsType }) {
     JSON.stringify(packageJson, null, 2) + os.EOL
   );
 
+  // configure package.json scripts
+  configurePackageJsonScripts(willUseInBrowser, root);
+
+  // configure webpack
+  configureWebpack(jsType, willUseInBrowser, root, packageName);
+
   // Copy template files to new package folder
   copyTemplateFilesToRoot(jsType, root);
 
+  // Copy index.html if willUseInBrowser is true
+  if (willUseInBrowser) {
+    fs.copyFileSync(
+      path.join(__dirname, '/templates/index.html'),
+      path.join(root, 'index.html')
+    );
+  }
+
   // Run npm install in the directory to install the packages
-  installDevDependencies(jsType, root);
+  installDevDependencies(jsType, willUseInBrowser, root);
+
+  // configure eslint
+  configureEslintrc(jsType, root);
 
   // Initialize a git repository
   if (tryGitInit(root, packageJson.repository.url)) {
@@ -280,32 +321,36 @@ function copyTemplateFilesToRoot(jsType, root) {
  * @param {*} jsType
  * @returns devDependencies
  */
-function installDevDependencies(jsType, root) {
-  let devDependencies = [];
-  const commonDependencies = [
+function installDevDependencies(jsType, willUseInBrowser, root) {
+  const devDependencies = [
     'eslint',
     'eslint-config-prettier',
     'eslint-plugin-prettier',
     'jest',
     'prettier',
     'webpack',
-    'webpack-cli'
+    'webpack-cli',
+    'clean-webpack-plugin'
   ];
 
-  if (jsType === 'ES6') {
-    devDependencies = [
+  if (jsType === JsType.ES6) {
+    devDependencies.push(
       '@babel/core',
       '@babel/preset-env',
       'babel-eslint',
       'babel-loader'
-    ];
+    );
   } else if (jsType === 'TypeScript') {
-    devDependencies = ['typescript'];
+    devDependencies.push('typescript');
+  }
+
+  if (willUseInBrowser) {
+    devDependencies.push('webpack-dev-server', 'html-webpack-plugin');
   }
 
   const command = 'npm';
   const args = ['install', '--save-dev'];
-  commonDependencies.forEach(function(value) {
+  devDependencies.forEach(function(value) {
     args.push(value);
   });
   devDependencies.forEach(function(value) {
@@ -320,4 +365,33 @@ function installDevDependencies(jsType, root) {
     console.error(`\`${command} ${args.join(' ')}\` failed`);
     return;
   }
+}
+
+function configureEslintrc(jsType, root) {
+  // "parser": "babel-eslint", in eslintrc if jsType = ES6
+  if (jsType === JsType.ES6) {
+    const eslintrcJson = JSON.parse(
+      fs.readFileSync(path.join(root, '.eslintrc'))
+    );
+    eslintrcJson.parser = 'babel-eslint';
+    fs.writeFileSync(
+      path.join(root, '.eslintrc'),
+      JSON.stringify(eslintrcJson, null, 2) + os.EOL
+    );
+  }
+}
+
+function configurePackageJsonScripts(willUseInBrowser, root) {
+  const packageJson = require(path.join(root, 'package.json'));
+  packageJson.scripts = {
+    test: 'jest',
+    build: 'webpack'
+  };
+  if (willUseInBrowser) {
+    packageJson.scripts.start = 'webpack-dev-server';
+  }
+  fs.writeFileSync(
+    path.join(root, 'package.json'),
+    JSON.stringify(packageJson, null, 2) + os.EOL
+  );
 }
