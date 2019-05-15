@@ -1,6 +1,6 @@
 {
   "name": "@a6kme/create-npm-package",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Templates and scripts for NPM package",
   "repository": {
     "type": "git",
