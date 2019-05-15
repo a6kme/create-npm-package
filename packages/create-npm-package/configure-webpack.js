@@ -28,11 +28,12 @@ function configureWebpack(jsType, willUseInBrowser, root, packageName) {
     );
   }
 
-  let entryFile, rules, plugins;
+  let entryFile = './src/index.js',
+    rules,
+    plugins;
 
   // Set up rules
   if (jsType === JsType.ES6) {
-    entryFile = './src/index.js';
     rules = `[
       {
         test: /\.js$/,
@@ -88,15 +89,24 @@ module.exports = {
     libraryTarget: 'commonjs2'
   },`);
   }
-  writeStream.write(`
+
+  if (rules) {
+    writeStream.write(`
   module: {
     rules: ${rules}
-  },
-  plugins: ${plugins}
+  },`);
+  }
+
+  if (plugins) {
+    writeStream.write(`
+  plugins: ${plugins},`);
+  }
+
+  writeStream.write(`
 };
 `);
+
   writeStream.end();
-  writeStream.close();
 }
 
 exports.configureWebpack = configureWebpack;
