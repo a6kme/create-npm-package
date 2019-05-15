@@ -19,7 +19,10 @@
   },
   "files": [
     "index.js",
-    "create-npm-package.js"
+    "utils.js",
+    "create-npm-package.js",
+    "configure-webpack.js",
+    "templates/"
   ],
   "dependencies": {
     "chalk": "^2.4.2",
@@ -28,5 +31,6 @@
     "inquirer": "^6.3.1",
     "lodash": "^4.17.11",
     "validate-npm-package-name": "^3.0.0"
-  }
+  },
+  "gitHead": "acda8993c10334c49d0e6dded3816cdd3793af5c"
 }
