@@ -18,6 +18,7 @@ function configureWebpack(jsType, willUseInBrowser, root, packageName) {
     path.join(root, 'webpack.config.js')
   );
   const camelCasedPackageName = camelCased(packageName);
+  writeStream.write(`/* eslint-disable */\n`);
   writeStream.write(`const path = require('path');\n`);
   writeStream.write(
     `const CleanWebpackPlugin = require('clean-webpack-plugin');\n`
@@ -30,10 +31,12 @@ function configureWebpack(jsType, willUseInBrowser, root, packageName) {
 
   let entryFile = './src/index.js',
     rules,
-    plugins;
+    plugins,
+    extensions;
 
   // Set up rules
   if (jsType === JsType.ES6) {
+    extensions = `['.js', 'jsx']`;
     rules = `[
       {
         test: /\.js$/,
@@ -44,6 +47,7 @@ function configureWebpack(jsType, willUseInBrowser, root, packageName) {
       }
     ]`;
   } else if (jsType === JsType.TypeScript) {
+    extensions = `['.ts', '.tsx', '.js']`;
     entryFile = './src/index.ts';
     rules = `[
       {
@@ -61,7 +65,6 @@ function configureWebpack(jsType, willUseInBrowser, root, packageName) {
     plugins = `[
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
-      title: '${camelCasedPackageName}',
       template: 'index.html'
     })
   ]`;
@@ -94,6 +97,13 @@ module.exports = {
     writeStream.write(`
   module: {
     rules: ${rules}
+  },`);
+  }
+
+  if (extensions) {
+    writeStream.write(`
+  resolve: {
+    extensions: ${extensions}
   },`);
   }
 

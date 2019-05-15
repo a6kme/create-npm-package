@@ -357,7 +357,13 @@ function installDevDependencies(jsType, willUseInBrowser, root) {
       'babel-loader'
     );
   } else if (jsType === 'TypeScript') {
-    devDependencies.push('typescript');
+    devDependencies.push(
+      'typescript',
+      'ts-loader',
+      'ts-jest',
+      '@typescript-eslint/parser',
+      '@typescript-eslint/eslint-plugin'
+    );
   }
 
   if (willUseInBrowser) {
@@ -384,17 +390,24 @@ function installDevDependencies(jsType, willUseInBrowser, root) {
 }
 
 function configureEslintrc(jsType, root) {
-  // "parser": "babel-eslint", in eslintrc if jsType = ES6
+  const eslintrcJson = JSON.parse(
+    fs.readFileSync(path.join(root, '.eslintrc'))
+  );
   if (jsType === JsType.ES6) {
-    const eslintrcJson = JSON.parse(
-      fs.readFileSync(path.join(root, '.eslintrc'))
-    );
+    // "parser": "babel-eslint", in eslintrc if jsType = ES6
     eslintrcJson.parser = 'babel-eslint';
-    fs.writeFileSync(
-      path.join(root, '.eslintrc'),
-      JSON.stringify(eslintrcJson, null, 2) + os.EOL
+  } else if (jsType === JsType.TypeScript) {
+    // "parser": "@typescript-eslint/parser", in eslintrc if jsType = TypeScript
+    eslintrcJson.parser = '@typescript-eslint/parser';
+    eslintrcJson.extends.push(
+      'plugin:@typescript-eslint/recommended',
+      'prettier/@typescript-eslint'
     );
   }
+  fs.writeFileSync(
+    path.join(root, '.eslintrc'),
+    JSON.stringify(eslintrcJson, null, 2) + os.EOL
+  );
 }
 
 function configurePackageJsonScripts(willUseInBrowser, root) {
