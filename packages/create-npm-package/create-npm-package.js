@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const os = require('os');
+const _ = require('lodash');
 const path = require('path');
 const fs = require('fs-extra');
 const chalk = require('chalk');
@@ -8,7 +9,7 @@ const inquirer = require('inquirer');
 const commander = require('commander');
 const execSync = require('child_process').execSync;
 const validateProjectName = require('validate-npm-package-name');
-const { validateUsername, JsType } = require('./utils');
+const { validateUsername, JsType, camelCased } = require('./utils');
 const { configureWebpack } = require('./configure-webpack');
 
 /******* Below code snippets are taken from https://github.com/facebook/create-react-app/ *******/
@@ -177,6 +178,16 @@ function createNpmPackage() {
     process.exit(1);
   }
 
+  const validationResult = validateProjectName(packageName);
+  if (!validationResult.validForNewPackages) {
+    console.error(
+      `Could not create a project called ${chalk.red(
+        `"${packageName}"`
+      )} because of npm naming restrictions:`
+    );
+    process.exit(1);
+  }
+
   inquirer
     .prompt([
       {
@@ -283,11 +294,16 @@ function run({
   // Copy template files to new package folder
   copyTemplateFilesToRoot(jsType, root);
 
-  // Copy index.html if willUseInBrowser is true
+  // Create template index.html file
   if (willUseInBrowser) {
-    fs.copyFileSync(
+    const source = fs.readFileSync(
       path.join(__dirname, '/templates/index.html'),
-      path.join(root, 'index.html')
+      { encoding: 'UTF-8' }
+    );
+    const compiled = _.template(source);
+    fs.writeFileSync(
+      path.join(root, 'index.html'),
+      compiled({ packageName: camelCased(packageName) })
     );
   }
 
