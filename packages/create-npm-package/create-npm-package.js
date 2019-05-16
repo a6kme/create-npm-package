@@ -270,7 +270,6 @@ function run({
   const packageJson = {
     name: `@${npmUsername}/${appName}`, // Creating scoped package to reduce name conflicts
     version: '0.1.0',
-    private: true,
     repository: {
       type: 'git',
       url: `https://github.com/${githubUsername}/${appName}.git`
@@ -278,7 +277,8 @@ function run({
     author: npmUsername,
     engines: {
       node: '>=8.10'
-    }
+    },
+    files: ['/dist']
   };
   fs.writeFileSync(
     path.join(root, 'package.json'),
@@ -414,7 +414,9 @@ function configurePackageJsonScripts(willUseInBrowser, root) {
   const packageJson = require(path.join(root, 'package.json'));
   packageJson.scripts = {
     test: 'jest',
-    build: 'webpack'
+    build: 'webpack --mode=production',
+    prepare: 'npm run test',
+    posttest: 'npm run build'
   };
   if (willUseInBrowser) {
     packageJson.scripts.start = 'webpack-dev-server';
