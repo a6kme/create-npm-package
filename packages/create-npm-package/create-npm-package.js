@@ -318,6 +318,18 @@ function run({
     console.log();
     console.log(chalk.green('Initialized a git repository.'));
   }
+
+  console.log();
+  console.log(chalk.magenta('Change directory to your package'));
+  console.log(chalk.green(`cd ${packageName}`));
+  if (willUseInBrowser) {
+    console.log();
+    console.log(chalk.magenta('You can test the package with command'));
+    console.log(chalk.green(`npm run start`));
+  }
+  console.log();
+  console.log(chalk.magenta('You can publish the package with command'));
+  console.log(chalk.green(`npm publish`));
 }
 
 function copyTemplateFilesToRoot(jsType, root) {

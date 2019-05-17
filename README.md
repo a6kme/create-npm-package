@@ -11,12 +11,17 @@ It is needed when you are planning to expose the library as a `<script>` tag in 
 
 ## How?
 - `npm install -g @a6kme/create-npm-package`
-- Run `create-npm-package` command, and answer some prompts to create a folder with your package name.
+- Run `create-npm-package <YOUR_PACKAGE_NAME>` command, and answer some prompts to create a folder with your package name.
+
+After doing `npm login` in the terminal window, you can directly run `npm publish --access public`. It will test and build the package, and publish it on npm repository. 
 
 ## What?
 Currently, the CLI tool is highly opinionated about the choice of tools it uses. It uses `webpack` for bundling, `jest` for testing, `eslint` for linting. It does the following for you
 - Sets up the package directory with name of your package
 - Creates `package.json`, with standard fields, like repository path, package name, and scripts for testing, linting etc.
 - Initializes the git repository with `.gitignore` file
-- Adds `eslint` configuration file
+- Sets git remote origin with `https://github.com/<YOUR_GIT_USERNAME>/<YOUR_PACKAGE_NAME>.git`
+- Adds `eslint` configuration file with appropriate parser
 - Adds `webpack` builder configuration file
+
+Check out my blog post about how to use this CLI at https://a6k.me/articles/how-to-create-and-publish-an-npm-package/
