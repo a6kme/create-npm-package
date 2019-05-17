@@ -341,6 +341,11 @@ function copyTemplateFilesToRoot(jsType, root) {
 
   // Copy common linting and config files
   fs.copySync(path.join(__dirname, '/templates/common'), root);
+
+  // Rename gitignore to .gitignore, since npm renames .gitnigre to .npmignore
+  // https://github.com/npm/npm/issues/1862
+  // https://github.com/facebook/create-react-app/pull/79/files#diff-aceaa0773daa0bbbbb4ffa996f279bb0R40
+  fs.moveSync(path.join(root, 'gitignore'), path.join(root, '.gitignore'));
 }
 
 /**
