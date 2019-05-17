@@ -1,6 +1,6 @@
 {
   "name": "@a6kme/create-npm-package",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "CLI tool to create an NPM package using ES5/ ES6/ TypeScript",
   "repository": {
     "type": "git",
