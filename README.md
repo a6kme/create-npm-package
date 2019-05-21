@@ -1,4 +1,4 @@
-# CLI tool to create npm package (Currently Work In Progress. Not published to NPM.)
+# CLI tool to create npm package
 [![lerna](https://img.shields.io/badge/maintained%20with-lerna-cc00ff.svg)](https://lerna.js.org/)
 
 
